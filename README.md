@@ -1,3 +1,11 @@
 PETVERSE: PETVERSE is an web-application where there are 2 types of users buyer and seller. Buyer can buy from the website or the seller and can also take saloon service. No authority acts between seller and buyer. Buyer have to contact seller directly and they should make deal accordingly upon thier wish. Seller can advertise his/her pet. After he/she can get contacted by some buyer. If seller finds any buyer and if his pet gets sold he can simply delete his advertisement. Buyer can also take saloon services. Buyer can choose a saloon service according to his/her wish for his pet. Buyer have to pay some Wholesome amount to proceed saloon booking. Later he/she have to show his saloon pass and can have saloon service at respective saloon. After taking saloon service for pet have to pay remaining amount at saloon. Addition of products, saloons were controlled by admin.
 
 How to run: npm run dev
+
+TEAM MEMBERS AND CONTRIBUTIONS-
+1.CH.LAKSHMI NISHITHA(S20210010051)-BUYING PETS AND PRODUCTS BACKEND PART
+2.K.D.P.S.HARSHITHA(S20210010116)- SELLER BACKEND PART
+3.KUSUMA TEKI(S20210010227)-SALOON BACKEND PART
+4.K.POORVITHA(S20210010122)-BUYING PETS AND PRODUCTS FRONTEND PART
+5.DIVYA.M(S20210020268)-SELLER FRONTEND PART
+6.SRINIDHI-SALOON FRONTEND PART
