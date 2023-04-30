@@ -6,6 +6,6 @@ TEAM MEMBERS AND CONTRIBUTIONS-
 1.CH.LAKSHMI NISHITHA(S20210010051)-Buying pets and products backend part
 2.K.D.P.S.HARSHITHA(S20210010116)- Seller backend part
 3.KUSUMA TEKI(S20210010227)-Saloon backend part
-4.K.POORVITHA(S20210010122)-Buying pets and products backend part
-5.DIVYA.M(S20210020268)-Seller frontend part
-6.SRINIDHI M(S20210020323)-Saloon frontend part
+4.DIVYA.M(S20210020268)-Seller frontend part 
+5.SRINIDHI M(S20210020323)-Saloon frontend part and breeds information frontend
+6.K.POORVITHA(S20210010122)-Buying pets and products backend part
