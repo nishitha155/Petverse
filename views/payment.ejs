@@ -68,6 +68,11 @@
               padding: 10px;
               margin-left: 310px;
              }
+             .error-message {
+      color: red;
+      font-size: 12px;
+      margin-top: 4px;
+    }
   </style>
   <link rel="stylesheet" href="css/payment.css">
 </head>
@@ -77,21 +82,26 @@
   <div class="form">    
 <legend>PAYMENT DETAILS</legend>
 
-  <form id="my-form" action="/paymentcnf" method="post">
+<form id="my-form" action="/paymentcnf" method="post">
     <label for="name">Name:</label>
     <input type="text" id="name" placeholder="Sathwik" required>
+    <div class="error-message" id="name-error"></div> <!-- Error message container -->
 
     <label for="address">Address:</label>
     <input type="text" id="address" name='address' placeholder="FlatNo:XXXXXX   CityPin:XXXXXX" required>
+    <div class="error-message" id="address-error"></div> <!-- Error message container -->
 
     <label for="account-number">Account Number:</label>
     <input type="text" id="account-number" placeholder="XXXX XXXX XXXX" required>
+    <div class="error-message" id="account-number-error"></div> <!-- Error message container -->
 
     <label for="cvv">CVV:</label>
     <input type="password" id="cvv" placeholder="XXX" required>
+    <div class="error-message" id="cvv-error"></div> <!-- Error message container -->
 
     <label for="exp-date">Expiry Date:</label>
     <input type="text" id="exp-date" placeholder="MM/YYYY" required>
+    <div class="error-message" id="exp-date-error"></div> <!-- Error message container -->
 
     <button type="submit">Place Order</button>
   </form>
@@ -116,54 +126,148 @@
 </div>
 </div>
 </div>
-  <script>
-    const form = document.getElementById("my-form");
-    const accountNumberInput = document.getElementById("account-number");
-    const cvvInput = document.getElementById("cvv");
-    const expDateInput = document.getElementById("exp-date");
+</div>
+<script>
+  const form = document.getElementById("my-form");
+  const accountNumberInput = document.getElementById("account-number");
+  const cvvInput = document.getElementById("cvv");
+  const expDateInput = document.getElementById("exp-date");
+const addressInput=document.getElementById('address')
+  // Regex patterns for validation
+  const accountNumberRegex = /^[0-9]{4} [0-9]{4} [0-9]{4}$/;
+  const cvvRegex = /^[0-9]{3}$/;
+  const expDateRegex = /^(0[1-9]|1[0-2])\/([0-9]{4})$/;
+ 
+  function validateName(input) {
+    const nameError = document.getElementById("name-error");
 
-    // Regex patterns for validation
+    if (input.value.trim() === "") {
+      nameError.textContent = "Name is required";
+      input.classList.add("invalid");
+    } else {
+      nameError.textContent = ""; // Clear error message
+      input.classList.remove("invalid");
+    }
+  }
+
+  // Validation for Address
+  function validateAddress(input) {
+    const addressError = document.getElementById("address-error");
+
+    if (input.value.trim() === "") {
+      addressError.textContent = "Address is required";
+      input.classList.add("invalid");
+    } else {
+      addressError.textContent = ""; // Clear error message
+      input.classList.remove("invalid");
+    }
+  }
+
+  // Validation for Account Number
+  function validateAccountNumber(input) {
+    const accountNumberError = document.getElementById("account-number-error");
     const accountNumberRegex = /^[0-9]{4} [0-9]{4} [0-9]{4}$/;
+
+    if (!accountNumberRegex.test(input.value)) {
+      accountNumberError.textContent = "Enter valid account number";
+      input.classList.add("invalid");
+    } else {
+      accountNumberError.textContent = ""; // Clear error message
+      input.classList.remove("invalid");
+    }
+  }
+
+
+  function validateCVV(input) {
+    const cvvError = document.getElementById("cvv-error");
     const cvvRegex = /^[0-9]{3}$/;
+
+    if (!cvvRegex.test(input.value)) {
+      cvvError.textContent = "Enter valid CVV";
+      input.classList.add("invalid");
+    } else {
+      cvvError.textContent = ""; // Clear error message
+      input.classList.remove("invalid");
+    }
+  }
+
+  // Validation for Expiry Date
+  function validateExpDate(input) {
+    const expDateError = document.getElementById("exp-date-error");
     const expDateRegex = /^(0[1-9]|1[0-2])\/([0-9]{4})$/;
 
-    form.addEventListener("submit", function(event) {
-        event.preventDefault();
-        if (validateForm()) {
-            // form is valid, submit it
-            form.submit();
-            alert("order placed succesfully")
-        }
-    });
-
-    function validateForm() {
-        let isValid = true;
-        // Validate Account Number
-        if (!accountNumberRegex.test(accountNumberInput.value)) {
-            isValid = false;
-            alert('Enter valid account number')
-            accountNumberInput.classList.add("invalid");
-        } else {
-            accountNumberInput.classList.remove("invalid");
-        }
-        // Validate CVV
-        if (!cvvRegex.test(cvvInput.value)) {
-            isValid = false;
-            alert('Enter valid cvv')
-            cvvInput.classList.add("invalid");
-        } else {
-            cvvInput.classList.remove("invalid");
-        }
-        // Validate Expiry Date
-        if (!expDateRegex.test(expDateInput.value)) {
-            isValid = false;
-            alert('Enter valid date')
-            expDateInput.classList.add("invalid");
-        } else {
-            expDateInput.classList.remove("invalid");
-        }
-        return isValid;
+    if (!expDateRegex.test(input.value)) {
+      expDateError.textContent = "Enter valid expiry date (MM/YYYY)";
+      input.classList.add("invalid");
+    } else {
+      expDateError.textContent = ""; // Clear error message
+      input.classList.remove("invalid");
     }
+  }
+
+  // Attach input event listeners to each input field
+  document.getElementById("name").addEventListener("input", function () {
+    validateName(this);
+  });
+
+  document.getElementById("address").addEventListener("input", function () {
+    validateAddress(this);
+  });
+
+  document.getElementById("account-number").addEventListener("input", function () {
+    validateAccountNumber(this);
+  });
+
+  document.getElementById("cvv").addEventListener("input", function () {
+    validateCVV(this);
+  });
+
+  document.getElementById("exp-date").addEventListener("input", function () {
+    validateExpDate(this);
+  });
+ 
+  
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (validateForm()) {
+      // Form is valid, submit it
+      form.submit();
+      alert("Order placed successfully");
+    } else {
+      // Form is invalid, show an alert
+      alert("Please correct the errors in the form");
+    }
+  });
+
+  function validateForm() {
+    let isValid = true;
+
+    // Validate Name
+    const nameInput = document.getElementById("name");
+    // ... (Validation for other fields as previously provided)
+
+    // Check each field's validity and set isValid accordingly
+    if (nameInput.classList.contains("invalid")) {
+      isValid = false;
+    }
+    if (addressInput.classList.contains("invalid")) {
+      isValid = false;
+    }
+    if (accountNumberInput.classList.contains("invalid")) {
+      isValid = false;
+    }
+    if (cvvInput.classList.contains("invalid")) {
+      isValid = false;
+    }
+    if (expDateInput.classList.contains("invalid")) {
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+
+</script>
+
   </script>
-</body>
-</html>

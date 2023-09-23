@@ -63,14 +63,13 @@
     <% if (orders.length === 0) { %>
         <p>No orders found.</p>
     <% } else { %>
-        <% orders.forEach(order => { %>
+        <% orders.forEach((order,user) => { %>
             <div class="form2">
                 <legend>
                     <h2>Order <%= order.orderId %></h2>
-                    <p>Ordered on: <%= order.created_at %></p>                    
-                    <p>Name: <%= user.fullname %></p>
-                    <p>Name: <%= user.phoneNumber %></p>
-                    <p>Address: <%= payment.address %></p>
+            <p>Ordered on: <%= order.created_at %></p>                    
+           
+                    
                     
                 </legend>
                 <div class="again">

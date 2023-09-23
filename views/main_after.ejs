@@ -7,15 +7,131 @@
   <link rel="stylesheet" href="css/catshop.css">
   <link rel="stylesheet" href="css/slider.css">
   <link rel="stylesheet" href="css/fullbox.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">  
 </head>
+<style>
+  .navbar{
+    margin-bottom: 0;
+  }
+ 
+    /* Custom CSS to override Bootstrap styles */
+    .navbar-inverse .navbar-nav>.open>a, .navbar-inverse .navbar-nav>.open>a:focus, .navbar-inverse .navbar-nav>.open>a:hover {
+   
+    background-color: #dcd3d3;
+    }
+    /* Add or modify your CSS styles accordingly */
+/* The modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
 
+/* Modal content */
+.modal-content {
+    background-color: #fff;
+   
+    padding: 20px;
+    border: 1px solid #888;
+    width: 21%;
+    margin: 61px 10px 3px 581px;
+}
+
+/* Close button */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+}
+#btnn{
+     background-color: white;
+    border: #fff;
+}
+/* CSS for the button with id 'btnn' */
+
+.container {
+            width: 100%; /* Adjust the width as needed */
+            height: 54vh; /* Adjust the height as needed */
+            position: relative;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Style for the upper half (blue) */
+        .upper-half {
+            background-color: #3498db; /* Blue */
+            height: 50%;
+        }
+
+        /* Style for the lower half (white) */
+        .lower-half {
+            background-color: #fff; /* White */
+            height: 50%;
+        }
+
+        /* Style for circles */
+        .circle {
+    width: 243px;
+    height: 243px;
+    background-color: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 2px solid #000;
+}
+
+        /* Style for circle images */
+        .circle img {
+            width: 100%; /* Make the image fill the circle */
+            height: 100%; /* Make the image fill the circle */
+            object-fit: cover; /* Preserve aspect ratio and cover the circle */
+            border-radius: 50%;
+        }
+
+        /* Position circles */
+        .circle1 {
+            left: 20px; /* Adjust the horizontal position of the first circle */
+        }
+
+        .circle2 {
+            right: 20px; /* Adjust the horizontal position of the second circle */
+        }
+        .bcon{
+          margin: auto;
+    position: relative;
+    top: 100px;
+    left: 300px;
+    font-size: 38px;
+    font-family: poppins;
+}
+#dbtn{
+  position: relative;
+    top: 125px;
+    left: 400px;
+    padding: 10px 33px;
+    border-radius: 20px;
+}
+#cbtn{
+  position: relative;
+    top: 125px;
+    left: 800px;
+    padding: 10px 33px;
+    border-radius: 20px;
+}
+
+</style>
 <body>
   <%-include('./partials/header.ejs') %> 
 
-  <div class="box_1">
-    <marquee behavior="" direction="left"><a href="/sallon">Try our saloons and get exclusive discounts</a>_____<a href="/dogs">Get
-        our best deals</a>_____<a href="/cats">Buy our exclusive merchandise</a></marquee>
-  </div>
+  
   <div class="sbody">
     <div class="slider">
       <div class="slides">
@@ -159,37 +275,28 @@
       </div>
     </div>
   </div>
-  <div class="fllbox">
-    <div class="container">
-      <div class="cont">
-        <div class="box1">
-          <!-- <div class="content1">
-                    <p>DOGS</p>
-                </div> -->
-          <a href="/dogbreeds"> <img src="/static/images/dog_box.jpg" alt=""></a>
-        </div>
-        <div class="box2">
-          <h1>Dog Breeds</h1>
-        </div>
-      </div>
+  <div class="container">
+    <div class="upper-half"></div>
+    <div class="lower-half"></div>
+    <div class="circle circle1">
+        <img src="/static/images/dog_box.jpg" alt="Image 1">
     </div>
-    <div class="container">
-      <div class="cont">
-        <div class="box1">
-          <!-- <div class="content1">
-                    <p>DOGS</p>
-                </div> -->
-          <a href="/catbreeds"> <img src="/static/images/cat_box.jpg" alt=""></a>
-        </div>
-        <div class="box2">
-          <h1>Cat Breeds</h1>
-        </div>
-      </div>
+    <div>
+      <p class="bcon">Get To Know about Cat Breeds and Dog Breeds</p>
+      <a href="/dogbreeds"><button id="dbtn">Dog</button></a>
+      <a href="/catbreeds"><button id="cbtn">Cat</button></a>
     </div>
-  </div>
+    <div class="circle circle2">
+        <img src="/static/images/cat_box.jpg" alt="Image 2">
+    </div>
+</div>
+
   <%-include('./partials/footer.ejs') %> 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/search.js"></script>
   <script>
     var counter = 1;
     setInterval(function () {
@@ -200,6 +307,7 @@
       }
     }, 4000);
   </script>
+
 </body>
 
 </html>

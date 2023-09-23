@@ -10,15 +10,15 @@ const app=express();
 
 app.use(cookieParser())
 
-
+app.use(express.json())
+app.use(express.static('public'))
 
 dotenv.config({
 path:'./config.env'
 })
 
 
-const port = process.env.PORT || '6584'
-  
+const port = process.env.PORT || '2345' 
 
 mongoose.connect(process.env.MONGO_URL).then(()=>{
 console.log('DB connected sucessfully....')
@@ -44,6 +44,7 @@ import complaint from './models/complaint.js'
 import Saloon from './models/saloon.js'
 import Service from './models/service.js'
 import Payment from './models/payment.js'
+import sProduct from './models/sellprod.js';
 //set template engine
 app.set('view engine','ejs')
 
@@ -80,10 +81,10 @@ app.get('/register',(req,res)=>{
   res.render('main_after')
   console.log(register)
 })
-app.get('/admin/product',(req,res)=>{
+app.get('/sell/product',(req,res)=>{
   res.render('product-form')
 })
-app.get('/admin/pet',(req,res)=>{
+app.get('/sell/pet',(req,res)=>{
   res.render('pet-form')
 })
 
@@ -98,7 +99,24 @@ app.get('/addsaloon',(req,res)=>{
   res.render('saloon_add')
 })
 
- 
+app.get('/run',(req,res)=>{
+  res.render('run')
+})
+app.get('/admin/vieworders', async (req, res) => {
+  try {
+    const orders = await Order.find();
+    const users = await Promise.all(orders.map(order => User.findOne({ userId: orders.userId })));
+   console.log(users)
+
+    res.render('admin_order', { orders, users });
+  } catch (err) {
+    // Handle any errors here
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 
 app.use('/static', express.static(join(process.cwd(),'public')))
 app.use('/css',express.static(join(process.cwd(),'public/css')))
@@ -147,15 +165,84 @@ function svalidateform(sphoneno,semailid,spassword){
   return valid;
 }
 
+
+
+    
+  
+   
+  app.post('/admin/product/:id', urlencodedParser, (req, res) => {
+    const { name, description,available,product_category ,price } = req.body;
+    sProduct.findByIdAndUpdate(req.params.id, {
+      name,
+      description,
+      available,
+    product_category,
+      price
+    })
+      .then(() => res.redirect('/admin'))
+      .catch(err => console.log(err));
+  });
+  app.post('/admin/saloon/:id', urlencodedParser, (req, res) => {
+    const { saloonTitle, saloonDescription,saloonAddress, saloonLocation, saloonNumber } = req.body;
+    Saloon.findByIdAndUpdate(req.params.id, {
+      saloonTitle, saloonDescription,saloonAddress, saloonLocation, saloonNumber
+    })
+      .then(() => res.redirect('/admin/saloon'))
+      .catch(err => console.log(err));
+  });
+  
+  app.get('/admin/product/:id/edit', (req, res) => {
+    sProduct.findById(req.params.id)
+      .then(product => {
+        res.render('product-edit', { product });
+      })
+      .catch(err => console.log(err));
+  });
+  app.get('/admin/saloon/:id/edit', (req, res) => {
+    Saloon.findById(req.params.id)
+      .then(saloon => {
+        res.render('saloon-edit', { saloon });
+      })
+      .catch(err => console.log(err));
+  });
+  app.get('/admin/product/:id/delete', (req, res) => {
+    sProduct.findByIdAndRemove(req.params.id)
+    .then((deletedProduct) => {
+      console.log(`Deleted product: ${deletedProduct}`);
+      res.redirect('/admin');
+    })
+    .catch((err) => {
+      console.log(`Error deleting product: ${err}`);
+      res.redirect('/');
+    });
+  
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //register
 app.post('/register',async (req,res)=>{
   const hashPassword = await bcrypt.hash(req.body.password,10)
  if (validateForm(req.body.phno,req.body.email,req.body.password)){
   const newUser = new User({
-    fullname: req.body.fullname,phoneNumber: req.body.phno,email: req.body.email,username: req.body.username,password: hashPassword,});
+    fullname: req.body.fullname,phoneNumber: req.body.phno,email: req.body.email,username: req.body.username,password: hashPassword});
   res.cookie('register',req.body)
   con.collection('users').insertOne(newUser)
   .then((result)=>{
+
    res.status(200).redirect('/login')
   })
   .catch((err)=>{
@@ -174,7 +261,7 @@ app.post('/register',async (req,res)=>{
         res.send('Unique index violation:', err);
       }
     } else {
-        res.send('Error saving the user:', err);
+      res.status(401).redirect('/login');
     }
    })
  }
@@ -199,9 +286,11 @@ User.findOne({ username}).then(user => {
           res.redirect('/main')
         }
         else{
-          res.send("login failed")
+          res.status(401).redirect('/login');
         }
       })
+    } else{
+      res.status(401).redirect('/login');
     } 
   })
 
@@ -236,36 +325,78 @@ app.post('/update', async (req, res) => {
 });
 
 //seller signup
-app.post('/sellregister',async (req,res)=>{
-  const hashpass = await bcrypt.hash(req.body.spass1,10)
-  if (svalidateform(req.body.sphonenumber,req.body.semail,req.body.spass1)){
-   const newSeller = new Seller({sfullname: req.body.sfname,sphoneNumber: req.body.sphonenumber,semail: req.body.semail, susername: req.body.suname,spassword: hashpass,
-   });
-   res.cookie('sellregister',req.body)
-   con.collection('sellers').insertOne(newSeller)
-   .then((result)=>{
+// app.post('/sellregister',async (req,res)=>{
+//   const hashpass = await bcrypt.hash(req.body.spass1,10)
+//   if (svalidateform(req.body.sphonenumber,req.body.semail,req.body.spass1)){
+//    const newSeller = new Seller({sfullname: req.body.sfname,sphoneNumber: req.body.sphonenumber,semail: req.body.semail, susername: req.body.suname,spassword: hashpass
+//    });
+//    res.cookie('sellregister',req.body)
+//    con.collection('sellers').insertOne(newSeller)
+//    .then((result)=>{
     
-     res.status(200).redirect('/selllogin')
-   })
-   .catch((err)=>{
-     if (err.code === 11000) {
-       const message = err.message;
-       const usernameMatch = message.match(/susername/);
-       const emailMatch = message.match(/semail/);
+//      res.status(200).redirect('/selllogin')
+//    })
+//    .catch((err)=>{
+//      if (err.code === 11000) {
+//        const message = err.message;
+//        const usernameMatch = message.match(/susername/);
+//        const emailMatch = message.match(/semail/);
       
-       if (usernameMatch) {
-         res.send('sUsername already exists');
-       } else if (emailMatch) {
-         res.send('sEmail already exists');
-       }  else {
-         res.send('sUnique index violation:', err);
-       }
-     } else {
-       console.error('sError saving the user:', err);
-     }
-    })
+//        if (usernameMatch) {
+//          res.send('sUsername already exists');
+//        } else if (emailMatch) {
+//          res.send('sEmail already exists');
+//        }  else {
+//          res.send('sUnique index violation:', err);
+//        }
+//      } else {
+//        res.status(401).redirect('/selllogin');
+//      }
+//     })
+//   }
+// })
+
+
+app.post('/sellregister', async (req, res) => {
+  console.log(req.body)
+  const hashpass = await bcrypt.hash(req.body.spass1, 10);
+
+  // Replace svalidateform with your validation logic
+  // For example, checking if the phone number, email, and password meet your criteria
+  if (validateForm(req.body.sphonenumber, req.body.semail, req.body.spass1)) {
+    const newSeller = new Seller({
+      sfullname: req.body.sfname,
+      sphoneNumber: req.body.sphonenumber,
+      semail: req.body.semail,
+      susername: req.body.suname,
+      spassword: hashpass,
+    });
+
+    newSeller
+      .save()
+      .then((result) => {
+        res.status(200).redirect('/selllogin');
+      })
+      .catch((err) => {
+        if (err.code === 11000) {
+          const message = err.message;
+          const usernameMatch = message.includes('susername');
+          const emailMatch = message.includes('semail');
+
+          if (usernameMatch) {
+            res.send('sUsername already exists');
+          } else if (emailMatch) {
+            res.send('sEmail already exists');
+          } else {
+            res.send('sUnique index violation: ' + err.message);
+          }
+        } else {
+          res.status(401).redirect('/selllogin');
+        }
+      });
   }
-})
+});
+
 
 
 
@@ -273,15 +404,25 @@ app.post('/sellregister',async (req,res)=>{
 app.post('/slogin', (req, res) => {
   const  susername = req.body.sluname;
   const  spassword = req.body.slpass;
-  console.log(susername,spassword)
+  // console.log(susername,spassword)
   const seller_username=req.body.sluname
   res.cookie('seller_username',seller_username)
+  sProduct.find({username:seller_username}).then(products=>{
+    let total = 0;
+    products.forEach((product)=>{
+      total += product.price
+    })
+    // console.log(total)
+    
+  })
+ 
   Seller.findOne({ susername})
     .then(seller => {
+      // console.log(seller)
       if (seller) {
         bcrypt.compare(spassword,seller.spassword,function(err,result){
           if(result==true){
-            console.log(seller)
+            // console.log(seller)
         res.redirect('/sellform')
         app.get('/sellersaccount', (req, res) => {
           res.render('sellersaccount', { seller });
@@ -291,7 +432,9 @@ app.post('/slogin', (req, res) => {
             res.send('Login failed!');
           }
         })
-      } 
+      }else{
+        res.status(401).redirect('/selllogin')
+      }
     })
     .catch(err => {
       console.error('Error finding user', err);
@@ -299,6 +442,49 @@ app.post('/slogin', (req, res) => {
     });
   
 });
+
+
+app.post('/sellitem',urlencodedParser, (req, res) =>{
+  const seller_username = req.cookies.seller_username
+  console.log(seller_username)
+  const { name, description,pet_category,product_category,available,breed,year,gender,weight, price,image } = req.body;
+  const sproduct = new sProduct({
+    username:seller_username,
+    name,
+    description,
+    pet_category,
+    product_category,
+    available,
+    breed,
+    year,
+    gender,
+    weight,
+    price,
+    image
+  });
+  sproduct.save()
+    .then(() => res.redirect('/sellform'))
+    .catch(err => console.log(err));
+})
+
+
+
+
+
+app.post('/alogin', (req, res) => {
+  const  susername = req.body.sluname;
+  const  spassword = req.body.slpass;
+ if(susername==='admin__'&&spassword==='123123'){
+ res.redirect('/admin')
+ }else{
+  res.send('Incorrect admin credentials!')
+ }
+  
+  
+});
+app.get('/admin_login',(req,res)=>{
+  res.render('admin_login')
+})
 
 
 //seller account update
@@ -331,7 +517,7 @@ app.post('/sellersupdate',async (req, res) => {
 app.get('/dogfood', (req, res) => {
   const cat1='food'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -342,7 +528,7 @@ app.get('/dogfood', (req, res) => {
 app.get('/dogpet', (req, res) => {
   const cat1='pet'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_pets', { products });
     })
@@ -353,7 +539,7 @@ app.get('/dogpet', (req, res) => {
 app.get('/catpet', (req, res) => {
   const cat1='pet'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_pets', { products });
     })
@@ -362,7 +548,7 @@ app.get('/catpet', (req, res) => {
     
 });app.get('/pet', (req, res) => {
   const cat1='pet'
-  Product.find({ product_category:cat1})
+  sProduct.find({ product_category:cat1})
     .then(products => {
       res.render('pets', { products });
     })
@@ -373,7 +559,7 @@ app.get('/catpet', (req, res) => {
 app.get('/dogaccess', (req, res) => {
   const cat1='accessories'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -382,7 +568,7 @@ app.get('/dogaccess', (req, res) => {
 app.get('/dogbed', (req, res) => {
   const cat1='bed'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -393,7 +579,7 @@ app.get('/dogbed', (req, res) => {
 app.get('/doggrooming', (req, res) => {
   const cat1='grooming'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -403,7 +589,7 @@ app.get('/doggrooming', (req, res) => {
 app.get('/dogtoy', (req, res) => {
   const cat1='toys'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -414,7 +600,7 @@ app.get('/dogtoy', (req, res) => {
 app.get('/dogcloth', (req, res) => {
   const cat1='clothing'
   const cat2='dog'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('dog_products', { products });
     })
@@ -425,7 +611,7 @@ app.get('/dogcloth', (req, res) => {
 app.get('/catfood', (req, res) => {
   const cat1='food'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -436,7 +622,7 @@ app.get('/catfood', (req, res) => {
 app.get('/cataccess', (req, res) => {
   const cat1='accessories'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -445,7 +631,7 @@ app.get('/cataccess', (req, res) => {
 app.get('/catbed', (req, res) => {
   const cat1='bed'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -456,7 +642,7 @@ app.get('/catbed', (req, res) => {
 app.get('/catgrooming', (req, res) => {
   const cat1='grooming'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -466,7 +652,7 @@ app.get('/catgrooming', (req, res) => {
 app.get('/cattoy', (req, res) => {
   const cat1='toys'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -477,7 +663,7 @@ app.get('/cattoy', (req, res) => {
 app.get('/catcloth', (req, res) => {
   const cat1='clothing'
   const cat2='cat'
-  Product.find({product_category:cat1 , pet_category:cat2})
+  sProduct.find({product_category:cat1 , pet_category:cat2})
     .then(products => {
       res.render('cat_products', { products });
     })
@@ -488,7 +674,7 @@ app.get('/catcloth', (req, res) => {
 
 app.get('/pet', (req, res) => {
   const cat4='pet'
-  Product.find({product_category:cat4})
+  sProduct.find({product_category:cat4})
     .then(products_pet => {
       res.render('pets', { products_pet });
     })
@@ -498,7 +684,7 @@ app.get('/pet', (req, res) => {
 });
 app.get('/grooming', (req, res) => {
   const cat4='grooming'
-  Product.find({product_category:cat4})
+  sProduct.find({product_category:cat4})
     .then(products_grooming=> {
       res.render('grooming', { products_grooming });
     })
@@ -508,7 +694,7 @@ app.get('/grooming', (req, res) => {
 });
 app.get('/toys', (req, res) => {
   const cat2='toys'
-  Product.find({product_category:cat2})
+  sProduct.find({product_category:cat2})
     .then(products_toys => {
       res.render('toys', { products_toys });
     })
@@ -518,7 +704,7 @@ app.get('/toys', (req, res) => {
 });
 app.get('/accessories', (req, res) => {
   const cat3='accessories'
-  Product.find({product_category:cat3})
+  sProduct.find({product_category:cat3})
     .then(products => {
       res.render('accessories', { products });
     })
@@ -529,7 +715,7 @@ app.get('/accessories', (req, res) => {
 
 app.get('/clothing', (req, res) => {
   const cat3='clothing'
-  Product.find({product_category:cat3})
+  sProduct.find({product_category:cat3})
     .then(products_clothing => {
       res.render('clothing', { products_clothing });
     })
@@ -539,7 +725,7 @@ app.get('/clothing', (req, res) => {
 });
 app.get('/bed', (req, res) => {
   const cat3='bed'
-  Product.find({product_category:cat3})
+  sProduct.find({product_category:cat3})
     .then(products_bed => {
       res.render('bed', { products_bed });
     })
@@ -556,7 +742,7 @@ app.post('/add-to-cart', async (req, res) => {
   const productId = req.body.productId;
   const userId = req.cookies.id;
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
     const existingCart = await Cart.findOne({ userId: userId });
     if (existingCart) {
       const item = existingCart.items.find(item => item.productId == productId);
@@ -617,7 +803,7 @@ app.post('/add-to-cart-dog', async (req, res) => {
   const productId = req.body.productId;
   const userId = req.cookies.id;
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
     const existingCart = await Cart.findOne({ userId: userId });
     if (existingCart) {
       const item = existingCart.items.find(item => item.productId == productId);
@@ -676,7 +862,7 @@ app.post('/add-to-cart-cat', async (req, res) => {
   const productId = req.body.productId;
   const userId = req.cookies.id;
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
     const existingCart = await Cart.findOne({ userId: userId });
     
     if (existingCart) {
@@ -736,30 +922,68 @@ app.post('/add-to-cart-cat', async (req, res) => {
 
 
 //update cart
+function calculateTotalPrice(cart) {
+  let totalp = 0;
+
+  for (const item of cart.items) {
+    totalp += item.price * item.quantity;
+  }
+
+  return totalp;
+}
 app.post('/update-cart', async (req, res) => {
+  const k =1;
   const userId = req.cookies.id;
   const productId = req.body.productId;
   const quantity = req.body.quantity;
-
+  const numi = req.body.itemquantity;
+  const cart = await Cart.findOne({ userId });
+  let totalprice=calculateTotalPrice(cart);
+  const diff = quantity-numi;
+  console.log(numi);
+  console.log(diff+"here");
   try {
+    // Update the cart in the database
     const cart = await Cart.findOneAndUpdate(
       { userId: userId, 'items.productId': productId },
       { $set: { 'items.$.quantity': quantity } },
       { new: true }
     );
 
-    res.redirect('/cart');
+    const cart1 = await Cart.findOne({ userId });
+
+    if (!cart1) {
+      return res.status(404).json({ error: 'Cart not found' });
+    }
+
+    
+    const item1 = cart1.items.find(item => item.productId.toString() === productId);
+
+    if (!item1) {
+      return res.status(404).json({ error: 'Item not found in cart' });
+    }
+
+    // Access the price of the item
+    const itemPrice = item1.price;
+    totalprice = totalprice+ diff*itemPrice;
+
+    if (!cart1) {
+      return res.status(404).json({ error: 'Cart not found' });
+    }
+
+    // Send a successful response
+    res.json({ productId, quantity, totalprice });
   } catch (err) {
-    console.log(err);
-    res.redirect('/');
+    console.error('Database Error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 const updateProductQuantity = async (productId, quantity) => {
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
 
     const updatedQuantity = product.available - quantity < 0 ? 0 : product.available - quantity;
-    await Product.findByIdAndUpdate(productId, { $set: { available: updatedQuantity } });
+    await sProduct.findByIdAndUpdate(productId, { $set: { available: updatedQuantity } });
   } catch (error) {
     console.log(error);
   }
@@ -831,7 +1055,7 @@ app.post('/add-to-wish-dog', async (req, res) => {
   const productId = req.body.productId;
   const userId = req.cookies.id;
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
     const existingWish = await Wish.findOne({ userId: userId });
     
     if (existingWish) {
@@ -894,7 +1118,7 @@ app.post('/add-to-wish-cat', async (req, res) => {
   
 
   try {
-    const product = await Product.findById(productId);
+    const product = await sProduct.findById(productId);
     const existingWish = await Wish.findOne({ userId: userId });
     
     if (existingWish) {
@@ -961,29 +1185,53 @@ app.get('/viewcomplaints',(req,res)=>{
 
 app.post('/single-product', async(req,res)=>{
   const productId = req.body.productId;
-  const product = await Product.findById(productId);
+  const product = await sProduct.findById(productId);
   const reviews = await Review.find({"product_id":productId});
   res.render('single',{product,reviews})
 })
 
 
+// Assuming you have a 'Product' model defined for searching
+app.post('/search', async (req, res) => {
+  try {
+    let payload = req.body.payload.trim();
+    
+    // Perform a case-insensitive search using regular expressions
+    let search = await sProduct.find({ name: { $regex: new RegExp('^' + payload + '.*', 'i') } }).exec();
+    
+    // Limit search results to 5
+    search = search.slice(0, 5);
 
-app.post('/search',async(req,res)=>{
- 
-    try{
-      var search = req.body.search;
-     var products=await Product.find({"name":{$regex:'.*'+search+'.*',$options:'i'}});
-      if(products.length>0){
-        res.render('dog_products',{products})
-      }else{
-       res.render('oops')
-      }
+    res.send({ payload: search });
+  } catch (error) {
+    res.status(400).send({ success: false, msg: error.message });
+  }
+});
+
+// Assuming you have a 'Product' model defined for rendering search results
+app.post('/search1', async (req, res) => {
+  try {
+    const search1 = req.body.hellomoto;
+    console.log("Search query:", search1);
+
+    // Assuming you have a 'Product' model defined
+    const products = await sProduct.find({ "name": { $regex: '.*' + search1 + '.*', $options: 'i' } });
+
+    if (products.length > 0) {
+      // Assuming you have a 'dog_products' template
+      res.render('dog_products', { products });
+    } else {
+      // Assuming you have an 'oops' template
+      res.render('oops');
     }
-    catch(error){
-      res.status(400).send({success:false,msg:error.message})
-    }
-  
-})
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).send("An error occurred. Please try again later.");
+  }
+});
+
+
+
 
 
 
@@ -1028,11 +1276,11 @@ app.post('/petinfo',(req,res)=>{
    app.get('/petpost',(req,res)=>{
     const seller_username = req.cookies.seller_username
     console.log(seller_username)
-    Petinfo.find({ "username":seller_username })
-    .then(petinfos => {
-      if (petinfos) {
+    sProduct.find({ "username":seller_username })
+    .then(products => {
+      if (products) {
         // console.log(petinfos)
-        res.render('petposts', {petinfos})
+        res.render('petposts', {products})
       }})
    })
    //new
@@ -1040,7 +1288,39 @@ app.post('/petinfo',(req,res)=>{
     res.redirect("/sellform")
    }
 )
+app.post('/petpost/:id', urlencodedParser, (req, res) => {
+  const { name, description,available,product_category ,price } = req.body;
+  sProduct.findByIdAndUpdate(req.params.id, {
+    name,
+    description,
+    available,
+  product_category,
+    price
+  })
+    .then(() => res.redirect('/main'))
+    .catch(err => console.log(err));
+});
 
+app.get('/petpost/:id/edit', (req, res) => {
+  sProduct.findById(req.params.id)
+    .then(product => {
+      res.render('product-edit', { product });
+    })
+    .catch(err => console.log(err));
+});
+
+app.get('/petpost/:id/delete', (req, res) => {
+  sProduct.findByIdAndRemove(req.params.id)
+  .then((deletedProduct) => {
+    console.log(`Deleted product: ${deletedProduct}`);
+    res.redirect('/petpost');
+  })
+  .catch((err) => {
+    console.log(`Error deleting product: ${err}`);
+    res.redirect('/petpost');
+  });
+
+});
    //new
 app.get('/sf/:id', (req, res) => {
     Petinfo.findByIdAndRemove(req.params.id)
@@ -1056,7 +1336,7 @@ app.get('/sf/:id', (req, res) => {
 });
 app.post('/single-product', async(req,res)=>{
   const productId = req.body.productId;
-  const product = await Product.findById(productId);
+  const product = await sProduct.findById(productId);
   res.render('single',{product})
 })
 
@@ -1075,7 +1355,7 @@ app.post('/buy-now', async (req, res) => {
       return;
     }
     for (let item of cart.items) {
-            const product = await Product.findById(item.productId);
+            const product = await sProduct.findById(item.productId);
             if (product.available < item.quantity) {
               return res.render('out-of-stock', { product });
             }
@@ -1151,13 +1431,13 @@ app.post('/filter-dog-products', async (req, res) => {
   let products;
 
   if (filterValue === 'below-500') {
-    products = await Product.find({ pet_category: 'dog', price: { $lt: 500 } });
+    products = await sProduct.find({ pet_category: 'dog', price: { $lt: 500 } });
   } else if (filterValue === '500-1000') {
-    products = await Product.find({ pet_category: 'dog', price: { $gte: 500, $lte: 1000 } });
+    products = await sProduct.find({ pet_category: 'dog', price: { $gte: 500, $lte: 1000 } });
   } else if (filterValue === 'above-1000') {
-    products = await Product.find({ pet_category: 'dog', price: { $gt: 1000 } });
+    products = await sProduct.find({ pet_category: 'dog', price: { $gt: 1000 } });
   } else {
-    products = await Product.find({ pet_category: 'dog' });
+    products = await sProduct.find({ pet_category: 'dog' });
   }
 
   res.render('dog_products', { products });
@@ -1214,7 +1494,7 @@ app.post('/admin/product', urlencodedParser, (req, res) => {
 });
 app.post('/admin/product/:id', urlencodedParser, (req, res) => {
   const { name, description,available,product_category ,price } = req.body;
-  Product.findByIdAndUpdate(req.params.id, {
+  sProduct.findByIdAndUpdate(req.params.id, {
     name,
     description,
     available,
@@ -1234,7 +1514,7 @@ app.post('/admin/saloon/:id', urlencodedParser, (req, res) => {
 });
 
 app.get('/admin/product/:id/edit', (req, res) => {
-  Product.findById(req.params.id)
+  sProduct.findById(req.params.id)
     .then(product => {
       res.render('product-edit', { product });
     })
@@ -1248,7 +1528,7 @@ app.get('/admin/saloon/:id/edit', (req, res) => {
     .catch(err => console.log(err));
 });
 app.get('/admin/product/:id/delete', (req, res) => {
-  Product.findByIdAndRemove(req.params.id)
+  sProduct.findByIdAndRemove(req.params.id)
   .then((deletedProduct) => {
     console.log(`Deleted product: ${deletedProduct}`);
     res.redirect('/admin');
@@ -1273,7 +1553,7 @@ app.get('/admin/saloon/:id/delete', (req, res) => {
 });
 app.get('/food', (req, res) => {
   const cat1='food'
-  Product.find({product_category:cat1})
+  sProduct.find({product_category:cat1})
     .then(products_food => {
       res.render('food', { products_food });
     })
@@ -1284,62 +1564,81 @@ app.get('/food', (req, res) => {
 
 app.get('/admin', (req, res) => {
   
-  Product.find()
+  sProduct.find()
     .then(products => {
       res.render('admin', { products });
     })
     .catch(err => console.log(err));
 });
-//  const number = await Product.countDocuments();
-//     const number1 = await User.countDocuments();
-// var u1,u2,u3,u4,u5,u6,u7,u8,u9
-// User.countDocuments().then(user=>{
-//   console.log(user)
-//    u1 =user
-// })
-// Product.countDocuments().then(user=>{
-//   console.log(user)
-//    u2 =user
-// })
-// Seller.countDocuments().then(user=>{
-//   console.log(user)
-//    u3 =user
-// })
-// Saloon.countDocuments().then(user=>{
-//   console.log(user)
-//    u4 =user
-// })
-// Petinfo.countDocuments().then(user=>{
-//   console.log(user)
-//    u5 =user
-// })
-// Service.countDocuments().then(user=>{
-//   console.log(user)
-//    u6 =user
-// })
-// complaint.countDocuments().then(user=>{
-//   console.log(user)
-//    u8 =user
-// })
-// Product.find().then(products=>{
-//   let total = 0;
-//   products.forEach((product)=>{
-//     total += product.price
-//   })
-//   console.log(total)
-//   u7=total
-// })
-//     app.get('/admin/dashboard',(req,res)=>{
+ const number = await Product.countDocuments();
+    const number1 = await User.countDocuments();
+var u1,u2,u3,u4,u5,u6,u7,u8,u9
+User.countDocuments().then(user=>{
+ 
+   u1 =user
+})
+Product.countDocuments().then(user=>{
+ 
+   u2 =user
+})
+Seller.countDocuments().then(user=>{
+  
+   u3 =user
+})
+Saloon.countDocuments().then(user=>{
+ 
+   u4 =user
+})
+Petinfo.countDocuments().then(user=>{
+  
+   u5 =user
+})
+Service.countDocuments().then(user=>{
+  
+   u6 =user
+})
+complaint.countDocuments().then(user=>{
+  
+   u8 =user
+})
+sProduct.find().then(products=>{
+    let total = 0;
+    products.forEach((product)=>{
+      total += product.price
+    })
+    console.log(total)
+    u7=total
+  })
+
+
+    app.get('/admin/dashboard',(req,res)=>{
 
      
       
 
-//     console.log(u1)
-//       res.render('admin_dashboard',{u1,u2,u3,u4,u5,u6,u7,u8})
-//     })
+   
+      res.render('admin_dashboard',{u1,u2,u3,u4,u5,u6,u7,u8})
+    })
+    app.post('/ajaxusername', async (req, res) => {
+      // console.log('xx');
+      // console.log(req.body);
+      const { uname } = req.body;
+      const resp = await User.find({ username: uname })
+      console.log(resp)
+      res.json({ msg: resp.length == 0 ? true : false })
+    })
+    
+    app.post('/ajaxusername2', async (req, res) => {
+      // console.log('xx');
+      // console.log(req.body);
+      const { uname } = req.body;
+      const resp = await Seller.find({ susername: uname })
+      console.log(resp)
+      res.json({ msg: resp.length == 0 ? true : false })
+    })
     app.get('/dogs', async (req, res) => {
       try {
-        const products = await Product.find({pet_category:'dog'});
+        const products = await sProduct.find({pet_category:'dog'});
         const cart = await Cart.findOne({ userId: req.cookies.id });
         const cartItems = cart ? cart.items : [];
         res.render('dog_products', { products, cartItems });
@@ -1350,7 +1649,7 @@ app.get('/admin', (req, res) => {
     });
     app.get('/cats', async (req, res) => {
       try {
-        const products = await Product.find({pet_category:'cat'});
+        const products = await sProduct.find({pet_category:'cat'});
         const cart = await Cart.findOne({ userId: req.cookies.id });
         const cartItems = cart ? cart.items : [];
         res.render('cat_products', { products, cartItems });
@@ -1359,7 +1658,7 @@ app.get('/admin', (req, res) => {
         res.redirect('/');
       }
     });
-    app.get('/previous-orders', async (req, res) => {
+    app.get('/orders', async (req, res) => {
       try {
         const orders = await Order.find({ userId: req.cookies.id }).sort({ date: -1 });
         res.render('previous-order', { orders });
@@ -1377,7 +1676,7 @@ app.get('/loutcancel',(req,res)=>{
 
 app.get('/lout',(req,res)=>{
    
-    res.redirect('/login')
+    res.redirect('/run')
     id=null
     res.clearCookie.id
     res.clearCookie.username

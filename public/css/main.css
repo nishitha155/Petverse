@@ -480,3 +480,17 @@ footer{
 /* #sell1{
     display: none;
 } */
+
+.navbar-inverse {
+    background-color: #ffffff;
+    border-color: #080808;
+}
+.navbar{
+    margin-bottom: 0;
+  }
+ 
+    /* Custom CSS to override Bootstrap styles */
+    .navbar-inverse .navbar-nav>.open>a, .navbar-inverse .navbar-nav>.open>a:focus, .navbar-inverse .navbar-nav>.open>a:hover {
+   
+    background-color: #dcd3d3;
+    }
