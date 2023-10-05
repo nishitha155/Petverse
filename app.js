@@ -282,7 +282,7 @@ User.findOne({ username}).then(user => {
         if(result == true){
           res.cookie('id',user._id)
           console.log("login successful")
-          // console.log(req.cookies.id)
+         
           res.redirect('/main')
         }
         else{
